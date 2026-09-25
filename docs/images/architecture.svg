@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 384" role="img" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="13">
+  <title>Foundry Chatbot deployment architecture</title>
+  <rect width="760" height="384" fill="#ffffff"/>
+  <defs>
+    <marker id="arch-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#8a8f98"/></marker>
+  </defs>
+  <text x="24" y="34" font-size="15" font-weight="600" fill="#1f2328">The browser only talks to nginx; only the API reaches Azure and Postgres</text>
+  <rect x="176" y="56" width="392" height="304" rx="8" fill="#f3f4f6" stroke="#8a8f98" stroke-width="1"/>
+  <text x="192" y="80" font-size="11.5" font-weight="600" fill="#6b7280">Docker Desktop · compose network</text>
+  <g fill="none" stroke="#8a8f98" stroke-width="1.25">
+    <path d="M155 150H205" marker-end="url(#arch-arrow)"/>
+    <path d="M355 150H395" marker-end="url(#arch-arrow)"/>
+    <path d="M545 150H590" marker-end="url(#arch-arrow)"/>
+    <path d="M545 172H578V260H590" stroke-dasharray="5 4" marker-end="url(#arch-arrow)"/>
+    <path d="M470 188V278" marker-start="url(#arch-arrow)" marker-end="url(#arch-arrow)"/>
+    <path d="M355 236H430V188" marker-end="url(#arch-arrow)"/>
+    <path d="M395 310H350" marker-end="url(#arch-arrow)"/>
+  </g>
+  <g font-size="11.5" fill="#6b7280" text-anchor="middle">
+    <text x="180" y="142">HTTP</text>
+    <text x="375" y="142">/api</text>
+    <text x="567" y="142">HTTPS</text>
+    <text x="478" y="238" text-anchor="start">SQL</text>
+  </g>
+  <g text-anchor="middle">
+    <rect x="25" y="118" width="130" height="64" rx="8" fill="#ffffff" stroke="#8a8f98" stroke-width="1.25"/>
+    <text x="90" y="146" font-weight="600" fill="#1f2328">Browser</text>
+    <text x="90" y="164" font-size="11.5" fill="#6b7280">localhost:3000</text>
+
+    <rect x="205" y="112" width="150" height="76" rx="8" fill="#ffffff" stroke="#8a8f98" stroke-width="1.25"/>
+    <text x="280" y="136" font-weight="600" fill="#1f2328">ui container</text>
+    <text x="280" y="156" fill="#1f2328">nginx :8080</text>
+    <text x="280" y="174" font-size="11.5" fill="#6b7280">React app + /api proxy</text>
+
+    <rect x="395" y="112" width="150" height="76" rx="8" fill="#e4e3fb" stroke="#4f46e5" stroke-width="2"/>
+    <text x="470" y="136" font-weight="600" fill="#1f2328">api container</text>
+    <text x="470" y="156" fill="#1f2328">FastAPI + LangGraph</text>
+    <text x="470" y="174" font-size="11.5" fill="#6b7280">:8000</text>
+
+    <rect x="205" y="218" width="150" height="36" rx="8" fill="#ffffff" stroke="#8a8f98" stroke-width="1.25"/>
+    <text x="280" y="240" fill="#1f2328">.env (keys, config)</text>
+
+    <rect x="395" y="278" width="150" height="64" rx="8" fill="#ffffff" stroke="#8a8f98" stroke-width="1.25"/>
+    <text x="470" y="304" font-weight="600" fill="#1f2328">db container</text>
+    <text x="470" y="322" font-size="11.5" fill="#6b7280">Postgres 16 + pgvector</text>
+
+    <rect x="190" y="284" width="160" height="52" rx="8" fill="#ffffff" stroke="#8a8f98" stroke-width="1.25"/>
+    <text x="270" y="306" font-weight="600" fill="#1f2328">pgdata volume</text>
+    <text x="270" y="324" font-size="11.5" fill="#6b7280">/var/lib/postgresql/data</text>
+
+    <rect x="590" y="118" width="146" height="64" rx="8" fill="#ffffff" stroke="#8a8f98" stroke-width="1.25"/>
+    <text x="663" y="146" font-weight="600" fill="#1f2328">Azure AI Foundry</text>
+    <text x="663" y="164" font-size="11.5" fill="#6b7280">gpt-5-mini (chat)</text>
+
+    <rect x="590" y="232" width="146" height="56" rx="8" fill="#ffffff" stroke="#8a8f98" stroke-width="1.25" stroke-dasharray="5 4"/>
+    <text x="663" y="256" font-weight="600" fill="#1f2328">OpenAI</text>
+    <text x="663" y="274" font-size="11.5" fill="#6b7280">alt. via LLM_PROVIDER</text>
+  </g>
+</svg>

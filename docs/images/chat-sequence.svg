@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 424" role="img" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="13">
+  <title>Chat turn sequence: POST + server-sent events</title>
+  <rect width="760" height="424" fill="#ffffff"/>
+  <defs>
+    <marker id="seq-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#8a8f98"/></marker>
+  </defs>
+  <text x="24" y="34" font-size="15" font-weight="600" fill="#1f2328">One chat turn: tokens stream back while Azure is still generating</text>
+  <g stroke="#d0d4da" stroke-width="1" stroke-dasharray="4 4">
+    <line x1="80" y1="92" x2="80" y2="408"/><line x1="235" y1="92" x2="235" y2="408"/><line x1="390" y1="92" x2="390" y2="408"/><line x1="545" y1="92" x2="545" y2="408"/><line x1="680" y1="92" x2="680" y2="408"/>
+  </g>
+  <g stroke-width="1.25">
+    <rect x="25" y="56" width="110" height="36" rx="8" fill="#ffffff" stroke="#8a8f98"/>
+    <rect x="180" y="56" width="110" height="36" rx="8" fill="#ffffff" stroke="#8a8f98"/>
+    <rect x="335" y="56" width="110" height="36" rx="8" fill="#e4e3fb" stroke="#4f46e5" stroke-width="2"/>
+    <rect x="490" y="56" width="110" height="36" rx="8" fill="#ffffff" stroke="#8a8f98"/>
+    <rect x="625" y="56" width="110" height="36" rx="8" fill="#ffffff" stroke="#8a8f98"/>
+  </g>
+  <g text-anchor="middle" font-weight="600" fill="#1f2328">
+    <text x="80" y="79">Browser</text><text x="235" y="79">nginx (ui)</text><text x="390" y="79">API</text><text x="545" y="79">Postgres</text><text x="680" y="79">Azure Foundry</text>
+  </g>
+  <g fill="none" stroke="#8a8f98" stroke-width="1.25">
+    <path d="M80 124H235" marker-end="url(#seq-arrow)"/>
+    <path d="M235 154H390" marker-end="url(#seq-arrow)"/>
+    <path d="M390 184H545" marker-end="url(#seq-arrow)"/>
+    <path d="M390 214H80" stroke-dasharray="5 4" marker-end="url(#seq-arrow)"/>
+    <path d="M390 244H545" marker-end="url(#seq-arrow)"/>
+    <path d="M390 274H680" marker-end="url(#seq-arrow)"/>
+    <path d="M680 304H390" stroke-dasharray="5 4" marker-end="url(#seq-arrow)"/>
+    <path d="M390 334H80" stroke-dasharray="5 4" marker-end="url(#seq-arrow)"/>
+    <path d="M390 364H545" marker-end="url(#seq-arrow)"/>
+    <path d="M390 394H80" stroke-dasharray="5 4" marker-end="url(#seq-arrow)"/>
+  </g>
+  <g text-anchor="middle" font-size="11.5">
+    <text x="157" y="117" fill="#1f2328">POST /api/chat</text>
+    <text x="312" y="147" fill="#1f2328">proxy, buffering off</text>
+    <text x="467" y="177" fill="#1f2328">insert conversation</text>
+    <text x="157" y="207" fill="#6b7280">SSE: meta event</text>
+    <text x="467" y="237" fill="#1f2328">load checkpoint</text>
+    <text x="612" y="267" fill="#1f2328">stream request</text>
+    <text x="612" y="297" fill="#6b7280">token deltas</text>
+    <text x="157" y="327" fill="#6b7280">SSE: token events</text>
+    <text x="467" y="357" fill="#1f2328">save checkpoint</text>
+    <text x="157" y="387" fill="#6b7280">SSE: done</text>
+  </g>
+</svg>
