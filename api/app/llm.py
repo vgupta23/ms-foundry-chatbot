@@ -22,8 +22,8 @@ def get_chat_model() -> BaseChatModel:
 def get_embeddings() -> Embeddings:
     if settings.provider == "azure":
         return AzureOpenAIEmbeddings(
-            azure_endpoint=settings.azure_openai_endpoint,
-            api_key=settings.azure_openai_api_key,
+            azure_endpoint=settings.azure_openai_embedding_endpoint or settings.azure_openai_endpoint,
+            api_key=settings.azure_openai_embedding_api_key or settings.azure_openai_api_key,
             api_version=settings.azure_openai_api_version,
             azure_deployment=settings.azure_openai_embedding_deployment,
         )

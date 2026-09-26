@@ -4,9 +4,9 @@ from pathlib import Path
 
 from langchain_core.documents import Document
 from langchain_postgres import PGVector
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 from pypdf import PdfReader
 
+from .chunking import smart_split
 from .config import settings
 
 ALLOWED_EXTENSIONS = {".pdf", ".txt", ".md"}
@@ -32,8 +32,14 @@ def load(filename: str, data: bytes) -> list[Document]:
 def ingest(vectorstore: PGVector, filename: str, data: bytes) -> tuple[str, int]:
     """Load, split and embed a file. Returns (document_id, chunk_count). Blocking; run in a threadpool."""
     pages = load(filename, data)
-    splitter = RecursiveCharacterTextSplitter(chunk_size=settings.chunk_size, chunk_overlap=settings.chunk_overlap)
-    chunks = splitter.split_documents(pages)
+    chunks = smart_split(
+        pages,
+        is_pdf=Path(filename).suffix.lower() == ".pdf",
+        max_chars=settings.chunk_size,
+        min_chars=settings.chunk_min_size,
+        breakpoint_percentile=settings.chunk_breakpoint_percentile,
+        embeddings=vectorstore.embeddings,
+    )
     if not chunks:
         raise EmptyDocumentError(
             f"No text could be extracted from '{filename}'. Scanned PDFs without a text layer are not supported."

@@ -32,6 +32,8 @@ def build_graph(vectorstore: PGVector | None, checkpointer: BaseCheckpointSaver)
             label = d.metadata.get("source", "unknown")
             if d.metadata.get("page"):
                 label += f", page {d.metadata['page']}"
+                if d.metadata.get("page_end"):
+                    label += f"-{d.metadata['page_end']}"
             parts.append(f"[source: {label}]\n{d.page_content}")
         return "\n\n---\n\n".join(parts)
 

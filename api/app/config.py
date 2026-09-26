@@ -22,15 +22,30 @@ class Settings(BaseSettings):
     azure_openai_api_version: str = "2024-10-21"
     azure_openai_chat_deployment: str | None = None
     azure_openai_embedding_deployment: str | None = None
+    # Optional: only when the embedding deployment lives on a different resource than the chat deployment.
+    azure_openai_embedding_endpoint: str | None = None
+    azure_openai_embedding_api_key: str | None = None
 
     database_url: str
     vector_collection: str = "documents"
-    chunk_size: int = 1000
-    chunk_overlap: int = 150
+    # Smart chunking (see chunking.py): chunks end on paragraph boundaries and break on topic shifts.
+    chunk_size: int = 1000  # max characters per chunk
+    chunk_min_size: int = 200  # don't close a chunk on a topic shift before it reaches this size
+    chunk_breakpoint_percentile: float = 90  # adjacent-paragraph distance above this percentile = new topic
     retrieval_k: int = 4
     max_upload_mb: int = 20
 
-    @field_validator("azure_openai_endpoint")
+    @field_validator("azure_openai_embedding_deployment")
+    @classmethod
+    def _deployment_name(cls, v: str | None) -> str | None:
+        if v and "://" in v:
+            raise ValueError(
+                "AZURE_OPENAI_EMBEDDING_DEPLOYMENT must be the deployment name (e.g. text-embedding-3-small), "
+                "not a URL. Put a different resource's URL in AZURE_OPENAI_EMBEDDING_ENDPOINT instead."
+            )
+        return v
+
+    @field_validator("azure_openai_endpoint", "azure_openai_embedding_endpoint")
     @classmethod
     def _resource_root(cls, v: str | None) -> str | None:
         # A Foundry project endpoint (https://<res>.services.ai.azure.com/api/projects/<proj>) is not the
