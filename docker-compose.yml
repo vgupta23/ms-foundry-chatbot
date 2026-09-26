@@ -46,5 +46,29 @@ services:
     ports:
       - "3000:8080"
 
+  # Web UI for browsing Postgres/pgvector data. Local dev tool only: bound to 127.0.0.1,
+  # runs in desktop mode (no pgAdmin login), and the "db" server is pre-registered.
+  pgadmin:
+    image: dpage/pgadmin4:9.18
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@example.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+      PGADMIN_SERVER_JSON_FILE: /pgadmin4/servers.json
+      PGPASS_LINE: db:5432:*:${POSTGRES_USER:-chatbot}:${POSTGRES_PASSWORD}
+    # Write a pgpass from .env so the pre-registered server connects without a prompt.
+    entrypoint: ["/bin/sh", "-c", "printf '%s\\n' \"$$PGPASS_LINE\" > /var/lib/pgadmin/pgpass && chmod 600 /var/lib/pgadmin/pgpass && exec /entrypoint.sh"]
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+      - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:5050:80"
+
 volumes:
   pgdata:
+  pgadmin-data:

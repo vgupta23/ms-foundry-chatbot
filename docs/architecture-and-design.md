@@ -44,7 +44,7 @@ The API is a FastAPI app on Python 3.12 whose startup builds one LangGraph agent
 | Model factory | `app/llm.py` | `get_chat_model()` and `get_embeddings()` for Azure or OpenAI |
 | Vector store | `app/vectorstore.py` | `PGVector` store (langchain-postgres) on the `documents` collection |
 | Agent graph | `app/graph.py` | `create_react_agent` with the `retrieve_documents` tool and the system prompt; no tool when RAG is off |
-| Ingestion | `app/ingest.py` | PDF/TXT/MD load, 1,000-character chunks with 150 overlap, embed and store with `document_id` + `source` metadata |
+| Ingestion | `app/ingest.py` | PDF/TXT/MD load, smart chunking via `app/chunking.py` (chunks end on paragraph boundaries, start at headings, and break where adjacent-paragraph embeddings show a topic shift; max 1,000 characters, no overlap; each chunk is prefixed with its heading path), embed and store with `document_id` + `source` metadata |
 | Dependencies | `app/deps.py` | Hands the pool, graph, checkpointer and vector store to routes; the single place to add auth later |
 | Chat router | `app/routers/chat.py` | `POST /api/chat`, streams the agent's tokens as SSE |
 | Conversations router | `app/routers/conversations.py` | List, read messages, delete |
@@ -108,7 +108,7 @@ The API calls Azure AI Foundry's OpenAI-compatible REST endpoint over HTTPS, aut
 **Calls made**
 
 - Chat: `POST {root}/openai/deployments/gpt-5-mini/chat/completions?api-version=2024-10-21` with `stream: true`. LangGraph turns the streamed deltas into message chunks, and the chat router forwards only the agent node's text as SSE tokens.
-- Embeddings (once configured): `POST {root}/openai/deployments/<embedding>/embeddings`, called on upload (per chunk batch) and on each retrieval query.
+- Embeddings (once configured): `POST {root}/openai/deployments/<embedding>/embeddings`, called on upload (once per paragraph for topic grouping, then per chunk batch) and on each retrieval query.
 
 No network call happens at startup; the first Azure call is the first chat. An Azure error (bad key, missing deployment, throttling) reaches the UI as an SSE `error` event on that message. Verified on 2026-09-25: the key authenticated, the resource listed one deployment (`gpt-5-mini`), and a two-turn chat streamed 44 token events and kept memory across turns.
 
@@ -121,7 +121,7 @@ All state lives in one Postgres 16 database (`chatbot`) with the pgvector 0.8.6 
 | `conversations` | App (`main.py`) | One row per chat: `id` (UUID), `title` (first 60 chars of the first message), `created_at`, `updated_at` |
 | `checkpoints`, `checkpoint_blobs`, `checkpoint_writes`, `checkpoint_migrations` | LangGraph `AsyncPostgresSaver` | Full message state per conversation, keyed by `thread_id` = conversation id |
 | `langchain_pg_collection` | langchain-postgres | Vector collections (`documents`) |
-| `langchain_pg_embedding` | langchain-postgres | One row per chunk: text, embedding vector, metadata (`document_id`, `source`, `page`) |
+| `langchain_pg_embedding` | langchain-postgres | One row per chunk: text, embedding vector, metadata (`document_id`, `source`, `page`, `page_end`, `section`) |
 
 The message history shown in the UI is read from the LangGraph checkpoint, not a separate messages table. Deleting a conversation removes its row and its checkpoint thread; deleting a document removes every chunk with its `document_id`.
 

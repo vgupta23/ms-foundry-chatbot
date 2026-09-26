@@ -133,14 +133,61 @@ services:
     ports:
       - "3000:8080"
 
+  # Web UI for browsing Postgres/pgvector data. Local dev tool only: bound to 127.0.0.1,
+  # runs in desktop mode (no pgAdmin login), and the "db" server is pre-registered.
+  pgadmin:
+    image: dpage/pgadmin4:9.18
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@example.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+      PGADMIN_SERVER_JSON_FILE: /pgadmin4/servers.json
+      PGPASS_LINE: db:5432:*:${POSTGRES_USER:-chatbot}:${POSTGRES_PASSWORD}
+    # Write a pgpass from .env so the pre-registered server connects without a prompt.
+    entrypoint: ["/bin/sh", "-c", "printf '%s\\n' \"$$PGPASS_LINE\" > /var/lib/pgadmin/pgpass && chmod 600 /var/lib/pgadmin/pgpass && exec /entrypoint.sh"]
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+      - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:5050:80"
+
 volumes:
   pgdata:
+  pgadmin-data:
 ```
+
+## `pgadmin/servers.json`
+
+```json
+{
+  "Servers": {
+    "1": {
+      "Name": "chatbot (pgvector)",
+      "Group": "ms-foundry-chatbot",
+      "Host": "db",
+      "Port": 5432,
+      "MaintenanceDB": "postgres",
+      "Username": "chatbot",
+      "SSLMode": "prefer",
+      "PassFile": "/var/lib/pgadmin/pgpass"
+    }
+  }
+}
+```
+
+`Username` must match `POSTGRES_USER`. pgAdmin imports this file only on the first start of a fresh `pgadmin-data` volume, so after changing it run `docker compose rm -sf pgadmin && docker volume rm ms-foundry-chatbot_pgadmin-data`, then `docker compose up -d pgadmin`.
 
 Notes:
 - The `api` service gets its health check from its Dockerfile `HEALTHCHECK`, which `condition: service_healthy` relies on.
 - `DATABASE_URL` is composed here so the password is defined only once in `.env`. The explicit `environment:` value overrides any `DATABASE_URL` set in `.env`, so the API always reaches `db` inside the compose network.
-- `db` is exposed on host port 5432 for local tools such as psql or pgAdmin. If port 5432 is already in use on the host, change the left-hand side (for example `"5433:5432"`).
+- `db` is exposed on host port 5432 for local tools such as psql. If port 5432 is already in use on the host, change the left-hand side (for example `"5433:5432"`).
+- pgAdmin is at http://localhost:5050 with no login. It reaches Postgres over the compose network (`db:5432`), not the host port. The password never goes into the repo: the entrypoint writes it from `.env` into a `0600` pgpass file inside the volume. Desktop mode with no login is acceptable only because the port is bound to `127.0.0.1`; don't publish it on `0.0.0.0` or carry it into a cluster without turning server mode and login back on.
+- The app services use host ports 3000, 8000 and 5432, and pgAdmin uses 5050. Before changing one, check that the new host port is free (`docker ps`, `netstat.exe -ano | grep LISTENING` from WSL).
 - Open the app at http://localhost:3000, with API docs at http://localhost:8000/docs.
 
 ## `.env.example` (commit this; real values go in `.env`)
@@ -160,7 +207,11 @@ AZURE_OPENAI_ENDPOINT=https://<your-resource>.openai.azure.com/
 AZURE_OPENAI_API_KEY=
 AZURE_OPENAI_API_VERSION=2024-10-21
 AZURE_OPENAI_CHAT_DEPLOYMENT=
+# Deployment NAME (not a URL), e.g. text-embedding-3-small. Empty = document upload/RAG disabled.
 AZURE_OPENAI_EMBEDDING_DEPLOYMENT=
+# Optional: only if the embedding deployment is on a different resource (defaults to the values above).
+AZURE_OPENAI_EMBEDDING_ENDPOINT=
+AZURE_OPENAI_EMBEDDING_API_KEY=
 
 # ---- Database ----
 POSTGRES_USER=chatbot
@@ -169,8 +220,12 @@ POSTGRES_DB=chatbot
 
 # ---- RAG tuning ----
 VECTOR_COLLECTION=documents
+# Smart chunking: chunks end on paragraph boundaries and split where the topic shifts.
+# CHUNK_SIZE = max characters per chunk; CHUNK_MIN_SIZE = smallest chunk closed on a topic shift;
+# CHUNK_BREAKPOINT_PERCENTILE = paragraph-to-paragraph embedding distance above this percentile starts a new chunk.
 CHUNK_SIZE=1000
-CHUNK_OVERLAP=150
+CHUNK_MIN_SIZE=200
+CHUNK_BREAKPOINT_PERCENTILE=90
 RETRIEVAL_K=4
 MAX_UPLOAD_MB=20
 ```
@@ -186,6 +241,7 @@ docker compose up -d api              # recreate the API to pick up .env changes
 docker compose down                   # stop (keeps data)
 docker compose down -v                # stop and WIPE the vector DB and history
 docker compose exec db psql -U chatbot -d chatbot -c "\dx"   # confirm pgvector is installed
+curl -s localhost:5050/misc/ping      # pgAdmin is up (UI at http://localhost:5050)
 ```
 
 Changes to `.env` require recreating the container, which `docker compose up -d` does. A restart alone is not enough.
@@ -197,3 +253,5 @@ Changes to `.env` require recreating the container, which `docker compose up -d`
 - **`relation "langchain_pg_embedding" ... dimension` errors after changing the embedding model:** re-ingest the documents into a new `VECTOR_COLLECTION`, or run `docker compose down -v` in dev.
 - **413 on upload:** raise both `client_max_body_size` and `MAX_UPLOAD_MB`.
 - **Port already in use on Windows:** change the host side of the port mapping.
+- **`docker` in WSL says it can't connect to `/var/run/docker.sock`:** Docker Desktop's WSL integration is off for this distro. Use `docker.exe` (same CLI, talks to Docker Desktop) or enable the integration under Settings → Resources → WSL integration.
+- **pgAdmin asks for the DB password or can't connect:** check that `POSTGRES_PASSWORD` is set in `.env`, then `docker compose up -d pgadmin` to recreate it, which rewrites the pgpass. `docker compose logs pgadmin` should show `Added 1 Server Group(s) and 1 Server(s)` on the first start.

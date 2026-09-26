@@ -13,6 +13,7 @@ docker compose up --build -d
 - UI: http://localhost:3000
 - API docs: http://localhost:8000/docs
 - Postgres: localhost:5432 (credentials from `.env`)
+- pgAdmin: http://localhost:5050 (no login; the "chatbot (pgvector)" server is pre-registered, localhost only)
 
 ## Choosing the model provider
 
@@ -35,6 +36,7 @@ Postgres data (vectors, chat history) lives in the named volume `pgdata`, mounte
 | ui  | 3000 → 8080 | built from `ui/` (node:22-alpine → nginx-unprivileged) |
 | api | 8000 | built from `api/` (python:3.12-slim) |
 | db  | 5432 | pgvector/pgvector:pg16 |
+| pgadmin | 127.0.0.1:5050 → 80 | dpage/pgadmin4:9.18 |
 
 ## Local development without Docker
 
