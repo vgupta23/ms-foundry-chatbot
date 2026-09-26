@@ -1,0 +1,14 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "chatbot (pgvector)",
+      "Group": "ms-foundry-chatbot",
+      "Host": "db",
+      "Port": 5432,
+      "MaintenanceDB": "postgres",
+      "Username": "chatbot",
+      "SSLMode": "prefer",
+      "PassFile": "/var/lib/pgadmin/pgpass"
+    }
+  }
+}
