@@ -6,7 +6,7 @@ All three run as containers via docker compose.
 ## Quick start (Docker Desktop)
 
 ```bash
-cp .env.example .env      # then fill in OPENAI_API_KEY or the AZURE_OPENAI_* values
+cp .env.example .env      # set a unique POSTGRES_PASSWORD and add provider credentials
 docker compose up --build -d
 ```
 

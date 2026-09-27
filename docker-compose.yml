@@ -14,7 +14,7 @@ services:
       - pgdata:/var/lib/postgresql/data
       - ./db/init:/docker-entrypoint-initdb.d:ro
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
@@ -32,7 +32,7 @@ services:
       db:
         condition: service_healthy
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
 
   ui:
     build: ./ui
@@ -44,7 +44,7 @@ services:
       api:
         condition: service_healthy
     ports:
-      - "3000:8080"
+      - "127.0.0.1:3000:8080"
 
   # Web UI for browsing Postgres/pgvector data. Local dev tool only: bound to 127.0.0.1,
   # runs in desktop mode (no pgAdmin login), and the "db" server is pre-registered.
