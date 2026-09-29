@@ -1,6 +1,6 @@
 # Containers and docker compose
 
-All base images are official images from Docker Hub with pinned tags. Docker Desktop pulls them automatically on `docker compose up --build`. To pre-pull them, run `docker compose pull db`; the `api` and `ui` base images are pulled during the build.
+All base images are official images from Docker Hub with pinned tags. Docker Desktop pulls them automatically on `docker compose up --build`. Compose builds all four services under app-specific `ms-foundry-chatbot-*` image names and applies project/service labels to the images and containers. The `db` and `pgadmin` Dockerfiles are thin wrappers around their pinned upstream images.
 
 ## `api/Dockerfile`
 
@@ -47,6 +47,18 @@ EXPOSE 8080
 
 `ui/.dockerignore`: `node_modules`, `dist`, `.env`, `.env.*`.
 
+## `db/Dockerfile` and `pgadmin/Dockerfile`
+
+These preserve the upstream images while giving the local builds consistent app-specific image names:
+
+```dockerfile
+# db/Dockerfile
+FROM pgvector/pgvector:pg16
+
+# pgadmin/Dockerfile
+FROM dpage/pgadmin4:9.18
+```
+
 ## `ui/nginx/default.conf.template`
 
 When the nginx image starts, it runs `envsubst` on the files in `/etc/nginx/templates/`, substituting only variables that are defined in the environment. That means `$uri` stays intact while `${API_UPSTREAM}` is replaced. The same image therefore works in compose and in k8s: only `API_UPSTREAM` changes.
@@ -91,7 +103,15 @@ name: ms-foundry-chatbot
 
 services:
   db:
-    image: pgvector/pgvector:pg16
+    build:
+      context: ./db
+      labels:
+        com.ms-foundry-chatbot.project: ms-foundry-chatbot
+        com.ms-foundry-chatbot.service: db
+    image: ms-foundry-chatbot-db:local
+    labels:
+      com.ms-foundry-chatbot.project: ms-foundry-chatbot
+      com.ms-foundry-chatbot.service: db
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-chatbot}
@@ -109,8 +129,15 @@ services:
       retries: 20
 
   api:
-    build: ./api
+    build:
+      context: ./api
+      labels:
+        com.ms-foundry-chatbot.project: ms-foundry-chatbot
+        com.ms-foundry-chatbot.service: api
     image: ms-foundry-chatbot-api:local
+    labels:
+      com.ms-foundry-chatbot.project: ms-foundry-chatbot
+      com.ms-foundry-chatbot.service: api
     restart: unless-stopped
     env_file: .env
     environment:
@@ -122,8 +149,15 @@ services:
       - "8000:8000"
 
   ui:
-    build: ./ui
+    build:
+      context: ./ui
+      labels:
+        com.ms-foundry-chatbot.project: ms-foundry-chatbot
+        com.ms-foundry-chatbot.service: ui
     image: ms-foundry-chatbot-ui:local
+    labels:
+      com.ms-foundry-chatbot.project: ms-foundry-chatbot
+      com.ms-foundry-chatbot.service: ui
     restart: unless-stopped
     environment:
       API_UPSTREAM: http://api:8000
@@ -136,7 +170,15 @@ services:
   # Web UI for browsing Postgres/pgvector data. Local dev tool only: bound to 127.0.0.1,
   # runs in desktop mode (no pgAdmin login), and the "db" server is pre-registered.
   pgadmin:
-    image: dpage/pgadmin4:9.18
+    build:
+      context: ./pgadmin
+      labels:
+        com.ms-foundry-chatbot.project: ms-foundry-chatbot
+        com.ms-foundry-chatbot.service: pgadmin
+    image: ms-foundry-chatbot-pgadmin:local
+    labels:
+      com.ms-foundry-chatbot.project: ms-foundry-chatbot
+      com.ms-foundry-chatbot.service: pgadmin
     restart: unless-stopped
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@example.com}
