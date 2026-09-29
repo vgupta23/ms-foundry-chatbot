@@ -2,7 +2,15 @@ name: ms-foundry-chatbot
 
 services:
   db:
-    image: pgvector/pgvector:pg16
+    build:
+      context: ./db
+      labels:
+        com.ms-foundry-chatbot.project: ms-foundry-chatbot
+        com.ms-foundry-chatbot.service: db
+    image: ms-foundry-chatbot-db:local
+    labels:
+      com.ms-foundry-chatbot.project: ms-foundry-chatbot
+      com.ms-foundry-chatbot.service: db
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-chatbot}
@@ -14,7 +22,7 @@ services:
       - pgdata:/var/lib/postgresql/data
       - ./db/init:/docker-entrypoint-initdb.d:ro
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
@@ -22,8 +30,15 @@ services:
       retries: 20
 
   api:
-    build: ./api
+    build:
+      context: ./api
+      labels:
+        com.ms-foundry-chatbot.project: ms-foundry-chatbot
+        com.ms-foundry-chatbot.service: api
     image: ms-foundry-chatbot-api:local
+    labels:
+      com.ms-foundry-chatbot.project: ms-foundry-chatbot
+      com.ms-foundry-chatbot.service: api
     restart: unless-stopped
     env_file: .env
     environment:
@@ -32,11 +47,18 @@ services:
       db:
         condition: service_healthy
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
 
   ui:
-    build: ./ui
+    build:
+      context: ./ui
+      labels:
+        com.ms-foundry-chatbot.project: ms-foundry-chatbot
+        com.ms-foundry-chatbot.service: ui
     image: ms-foundry-chatbot-ui:local
+    labels:
+      com.ms-foundry-chatbot.project: ms-foundry-chatbot
+      com.ms-foundry-chatbot.service: ui
     restart: unless-stopped
     environment:
       API_UPSTREAM: http://api:8000
@@ -44,12 +66,20 @@ services:
       api:
         condition: service_healthy
     ports:
-      - "3000:8080"
+      - "127.0.0.1:3000:8080"
 
   # Web UI for browsing Postgres/pgvector data. Local dev tool only: bound to 127.0.0.1,
   # runs in desktop mode (no pgAdmin login), and the "db" server is pre-registered.
   pgadmin:
-    image: dpage/pgadmin4:9.18
+    build:
+      context: ./pgadmin
+      labels:
+        com.ms-foundry-chatbot.project: ms-foundry-chatbot
+        com.ms-foundry-chatbot.service: pgadmin
+    image: ms-foundry-chatbot-pgadmin:local
+    labels:
+      com.ms-foundry-chatbot.project: ms-foundry-chatbot
+      com.ms-foundry-chatbot.service: pgadmin
     restart: unless-stopped
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@example.com}

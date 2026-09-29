@@ -6,7 +6,7 @@ All three run as containers via docker compose.
 ## Quick start (Docker Desktop)
 
 ```bash
-cp .env.example .env      # then fill in OPENAI_API_KEY or the AZURE_OPENAI_* values
+cp .env.example .env      # set a unique POSTGRES_PASSWORD and add provider credentials
 docker compose up --build -d
 ```
 
@@ -33,10 +33,13 @@ Postgres data (vectors, chat history) lives in the named volume `pgdata`, mounte
 
 | Service | Port | Image |
 |---|---|---|
-| ui  | 3000 → 8080 | built from `ui/` (node:22-alpine → nginx-unprivileged) |
-| api | 8000 | built from `api/` (python:3.12-slim) |
-| db  | 5432 | pgvector/pgvector:pg16 |
-| pgadmin | 127.0.0.1:5050 → 80 | dpage/pgadmin4:9.18 |
+| ui  | 3000 → 8080 | `ms-foundry-chatbot-ui:local` |
+| api | 8000 | `ms-foundry-chatbot-api:local` |
+| db  | 5432 | `ms-foundry-chatbot-db:local` (based on `pgvector/pgvector:pg16`) |
+| pgadmin | 127.0.0.1:5050 → 80 | `ms-foundry-chatbot-pgadmin:local` (based on `dpage/pgadmin4:9.18`) |
+
+Compose builds all four app images with the `ms-foundry-chatbot-` prefix and adds
+`com.ms-foundry-chatbot.project` and service-specific labels to the images and containers.
 
 ## Local development without Docker
 
